@@ -83,14 +83,16 @@ func (tcping *TCPing) Stop() {
 	tcping.done <- struct{}{}
 }
 
-func (tcping TCPing) ping() (time.Duration, net.Addr, error) {
-	var remoteAddr net.Addr
+func (tcping TCPing) ping() (time.Duration, string, error) {
+	remoteAddr := tcping.target.Host
+	if addrs, _ := net.LookupHost(tcping.target.Host); len(addrs) > 0 {
+		remoteAddr = addrs[0]
+	}
 	duration, errIfce := timeIt(func() interface{} {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", tcping.target.Host, tcping.target.Port), tcping.target.Timeout)
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", remoteAddr, tcping.target.Port), tcping.target.Timeout)
 		if err != nil {
 			return err
 		}
-		remoteAddr = conn.RemoteAddr()
 		conn.Close()
 		return nil
 	})
